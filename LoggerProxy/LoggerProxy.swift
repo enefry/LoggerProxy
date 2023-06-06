@@ -40,7 +40,7 @@ public class LoggerProxy {
     }
 
     /// 日志输出函数
-    public typealias LogFunc = (Level, () -> Date /* time */, String /* module name */, StaticString /* file */, StaticString /* func */, Int /* line */, String /* label */, () -> String /* msg */ ) -> Void
+    public typealias LogFunc = (Level, Date /* time */, String /* module name */, StaticString /* file */, StaticString /* func */, Int /* line */, String /* label */, () -> String /* msg */ ) -> Void
 
     /// 共享日志对象
     public static let shared = LoggerProxy()
@@ -50,7 +50,7 @@ public class LoggerProxy {
 
     /// 默认控制台日志输出
     public static let defaultConsoleLogger: LogFunc = { level, now, module, file, funcName, line, tag, msg in
-        let time = iso8601DateFormatter.string(from: now())
+        let time = iso8601DateFormatter.string(from: now)
         let msg2 = msg().replacingOccurrences(of: "\n", with: "~n")
         print("\(time) [\(level.desc())] \(module):\(funcName):\(line) [\(tag)] \(msg2) ### \(file)")
     }
@@ -134,7 +134,7 @@ public class LoggerProxy {
             return
         }
 
-        let now: () -> Date = { Date() }
+        let now = Date()
         let logFunc = logFunction
         if enableAsync {
             logQueue.async {
