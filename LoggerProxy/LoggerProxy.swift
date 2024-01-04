@@ -39,8 +39,21 @@ public class LoggerProxy {
         }
     }
 
+    public struct Message {
+        public let level: Level
+        public let time: Date
+        public let moduleName: String
+        public let fileName: StaticString
+        public let funcName: StaticString
+        public let lineNumber: Int
+        public let tag: String
+        public let msg: () -> String /* msg */
+        public let tid: UInt32
+        public let threadName: String?
+    }
+
     /// 日志输出函数
-    public typealias LogFunc = (Level, Date /* time */, String /* module name */, StaticString /* file */, StaticString /* func */, Int /* line */, String /* label */, () -> String /* msg */ ) -> Void
+    public typealias LogFunc = (Message) -> Void
 
     /// 共享日志对象
     public static let shared = LoggerProxy()
@@ -49,14 +62,14 @@ public class LoggerProxy {
     private static let iso8601DateFormatter = ISO8601DateFormatter()
 
     /// 默认控制台日志输出
-    public static let defaultConsoleLogger: LogFunc = { level, now, module, file, funcName, line, tag, msg in
-        let time = iso8601DateFormatter.string(from: now)
-        let msg2 = msg().replacingOccurrences(of: "\n", with: "~n")
-        print("\(time) [\(level.desc())] \(module):\(funcName):\(line) [\(tag)] \(msg2) ### \(file)")
+    public static let defaultConsoleLogger: LogFunc = { msg in
+        let time = iso8601DateFormatter.string(from: msg.time)
+        let msg2 = msg.msg().replacingOccurrences(of: "\n", with: "~n")
+        print("\(msg.time) [t:\(msg.threadName ?? "\(msg.tid)")] [\(msg.level.desc())] \(msg.moduleName):\(msg.funcName):\(msg.lineNumber) [\(msg.tag)] \(msg2) ### \(msg.fileName)")
     }
 
     /// 空白日志输出
-    public static let defaultEmptyLogger: LogFunc = { _, _, _, _, _, _, _, _ in
+    public static let defaultEmptyLogger: LogFunc = { _ in
     }
 
     /// 实际代理的日志输出
@@ -136,12 +149,15 @@ public class LoggerProxy {
 
         let now = Date()
         let logFunc = logFunction
+        
+        let machtid = pthread_mach_thread_np(pthread_self())
+        let message = Message(level: level, time: now, moduleName: module, fileName: file, funcName: funcName, lineNumber: line, tag: tag, msg: msg, tid: machtid, threadName: Thread.current.name)
         if enableAsync {
             logQueue.async {
-                logFunc(level, now, module, file, funcName, line, tag, msg)
+                logFunc(message)
             }
         } else {
-            logFunc(level, now, module, file, funcName, line, tag, msg)
+            logFunc(message)
         }
     }
 }
