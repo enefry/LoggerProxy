@@ -5,7 +5,8 @@ import PackageDescription
 let package = Package(
   name: "LoggerProxy",
   platforms: [
-    .iOS("13")
+    .iOS(.v13),
+    .macOS(.v11)
   ],
   products: [
     .library(name: "LoggerProxy", targets: ["LoggerProxy"]),
